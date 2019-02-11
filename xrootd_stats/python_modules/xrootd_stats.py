@@ -1,5 +1,5 @@
 import xml.etree.ElementTree as ET
-import subprocess
+import subprocess, threading
 import time
 import socket
 
@@ -152,22 +152,30 @@ sched_metric_list = {
 }
 
 
-def get_xml_info():
-    if len(data['xml']) == 0:
-        get_fresh_data()
+class info(object):
+    def __init__(self, cmd, timeout):
+        self.cmd = cmd
+        self.timeout = timeout
+        self.process = None
 
-    if int(time.time()) - int(data['time']) > 30:
-        get_fresh_data()
+    def run(self):
+        def target():
+            self.process = subprocess.Popen(self.cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            self.output, self.error = process.communicate()
 
+        thread = threading.Thread(target=target)
+        thread.start()
+        thread.join(self.timeout)
 
-def get_fresh_data():
-    cmd = 'xrdfs storage02.spacescience.ro query stats a'
-    process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
-    output, error = process.communicate()
+        if thread.is_alive():
+            self.process.terminate()
+            thread.join()
 
-    data['xml'] = output
-    data['time'] = int(time.time())
+        if self.process.returncode != 0:
+            self.output = '<statistics tod="1549894187" ver="v4.8.5" src="storage02.spacescience.ro:1094" tos="1549536300" pgm="xrootd" ins="server" pid="12630" site="ALICE::ISS::FILE"><stats id="info"><host>storage02.spacescience.ro</host><port>1094</port><name>server</name></stats><stats id="buff"><reqs>2809801</reqs><mem>2806064128</mem><buffs>2275</buffs><adj>0</adj><xlreqs>0</xlreqs><xlmem>0</xlmem><xlbuffs>0</xlbuffs></stats><stats id="link"><num>33</num><maxn>1482</maxn><tot>597325</tot><in>7895474465296</in><out>61311098990627</out><ctime>78625502</ctime><tmo>402447</tmo><stall>2502</stall><sfps>0</sfps></stats><stats id="poll"><att>33</att><en>134153420</en><ev>134062726</ev><int>0</int></stats><stats id="proc"><usr><s>2756</s><u>998418</u></usr><sys><s>89537</s><u>432281</u></sys></stats><stats id="xrootd"><num>597322</num><ops><open>779427</open><rf>0</rf><rd>425312114</rd><pr>0</pr><rv>1500571</rv><rs>97425035</rs><wr>1059910</wr><sync>598</sync><getf>0</getf><putf>0</putf><misc>1353961</misc></ops><sig><ok>0</ok><bad>0</bad><ign>0</ign></sig><aio><num>0</num><max>0</max><rej>0</rej></aio><err>781</err><rdr>0</rdr><dly>405</dly><lgn><num>581500</num><af>0</af><au>572179</au><ua>0</ua></lgn></stats><stats id="ofs"><role>server</role><opr>15</opr><opw>0</opw><opp>-12627</opp><ups>4885</ups><han>3665</han><rdr>0</rdr><bxq>0</bxq><rep>0</rep><err>0</err><dly>0</dly><sok>0</sok><ser>0</ser><tpc><grnt>653</grnt><deny>0</deny><err>8</err><exp>314</exp></tpc></stats><stats id="oss" v="2"><paths>1<stats id="0"><lp>"/"</lp><rp>"/home/XRDNAMESPACE/home/aliprod/data/"</rp><tot>175361696</tot><free>149029808</free><ino>11157504</ino><ifr>4822071</ifr></stats></paths><space>1<stats id="0"><name>public</name><tot>232526132072</tot><free>4832699653</free><maxf>2417287310</maxf><fsn>2</fsn><usg>5748101335</usg></stats></space></stats><stats id="sched"><jobs>134787411</jobs><inq>0</inq><maxinq>1286</maxinq><threads>196</threads><idle>181</idle><tcr>3508</tcr><tde>3312</tde><tlimr>105979183</tlimr></stats><stats id="sgen"><as>1</as><et>0</et><toe>1549894187</toe></stats></statistics>'
+            return self.output
 
+        return self.output
 
 def get_root_attrib(name):
     root = ET.fromstring(data['xml'])
@@ -320,19 +328,11 @@ def get_sched_metrics(name):
     return sched[name]
 
 
-def metric_init(params):
+def metric_init():
     global descriptors, Desc_Skel
-
-    if 'port' in params:
-        _port = params['port']
-
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    result = sock.connect_ex(('127.0.0.1', int(_port)))
-    if result == 0:
-        get_xml_info()
-    else:
-        s = '<statistics tod="0" ver="0" src="0" tos="0" pgm="0" ins="0" pid="0" site="ALICE::ISS::FILE"><stats id="info"><host>0</host><port>0</port><name>0</name></stats><stats id="buff"><reqs>0</reqs><mem>0</mem><buffs>0</buffs><adj>0</adj><xlreqs>0</xlreqs><xlmem>0</xlmem><xlbuffs>0</xlbuffs></stats><stats id="link"><num>0</num><maxn>0</maxn><tot>0</tot><in>0</in><out>0</out><ctime>0</ctime><tmo>0</tmo><stall>0</stall><sfps>0</sfps></stats><stats id="poll"><att>0</att><en>0</en><ev>0</ev><int>0</int></stats><stats id="proc"><usr><s>0</s><u>0</u></usr><sys><s>0</s><u>0</u></sys></stats><stats id="xrootd"><num>0</num><ops><open>0</open><rf>0</rf><rd>0</rd><pr>0</pr><rv>0</rv><rs>0</rs><wr>0</wr><sync>0</sync><getf>0</getf><putf>0</putf><misc>0</misc></ops><aio><num>0</num><max>0</max><rej>0</rej></aio><err>0</err><rdr>0</rdr><dly>0</dly><lgn><num>0</num><af>0</af><au>0</au><ua>0</ua></lgn></stats><stats id="ofs"><role>server</role><opr>0</opr><opw>0</opw><opp>0</opp><ups>0</ups><han>0</han><rdr>0</rdr><bxq>0</bxq><rep>0</rep><err>0</err><dly>0</dly><sok>0</sok><ser>0</ser><tpc><grnt>0</grnt><deny>0</deny><err>0</err><exp>0</exp></tpc></stats><stats id="oss" v="2"><paths>1<stats id="0"><lp>0</lp><rp>0</rp><tot>0</tot><free>0</free><ino>0</ino><ifr>0</ifr></stats></paths><space>1<stats id="0"><name>0</name><tot>0</tot><free>0</free><maxf>0</maxf><fsn>0</fsn><usg>0</usg></stats></space></stats><stats id="sched"><jobs>0</jobs><inq>0</inq><maxinq>0</maxinq><threads>0</threads><idle>0</idle><tcr>0</tcr><tde>0</tde><tlimr>0</tlimr></stats><stats id="sgen"><as>0</as><et>0</et><toe>0</toe></stats></statistics>'
-        data['xml'] = s
+    cmd = 'xrdfs storage02.spacescience.ro query stats a'
+    r = info(cmd, 5)
+    data['xml'] = r.run()
 
     Desc_Skel = {
         'name': 'XXX',
@@ -452,9 +452,7 @@ def metric_init(params):
             'format': v['format'],
             'description': v['description']
         }))
-
-    sock.close()
-
+        
     return descriptors
 
 
@@ -471,8 +469,7 @@ def metric_cleanup():
 
 
 if __name__ == "__main__":
-    params = {'port': '1094'}
-    metric_init(params)
+    metric_init()
 
     for d in descriptors:
         v = d['call_back'](d['name'])
