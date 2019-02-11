@@ -152,7 +152,7 @@ sched_metric_list = {
 }
 
 
-class info(object):
+class getData(object):
     def __init__(self, cmd, timeout):
         self.cmd = cmd
         self.timeout = timeout
@@ -331,7 +331,7 @@ def get_sched_metrics(name):
 def metric_init():
     global descriptors, Desc_Skel
     cmd = 'xrdfs storage02.spacescience.ro query stats a'
-    r = info(cmd, 5)
+    r = getData(cmd, 5)
     data['xml'] = r.run()
 
     Desc_Skel = {
