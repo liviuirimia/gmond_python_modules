@@ -4,7 +4,7 @@ modules {
         language = "python"
 
         param host {
-            value = "localhost"
+            value = "storage02.spacescience.ro"
         }
 
         param port {
