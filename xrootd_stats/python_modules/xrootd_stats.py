@@ -16,6 +16,7 @@ ofs = {}
 oss = {}
 sched = {}
 sgen = {}
+host = ''
 
 Desc_Skel = {}
 descriptors = []
@@ -329,8 +330,12 @@ def get_sched_metrics(name):
 
 
 def metric_init():
-    global descriptors, Desc_Skel
-    cmd = 'xrdfs storage02.spacescience.ro query stats a'
+    global descriptors, Desc_Skel, host
+    
+    if 'host' in params:
+        host = params['host']
+        
+    cmd = 'xrdfs %s query stats a' % (host)
     r = getData(cmd, 5)
     data['xml'] = r.run()
 
